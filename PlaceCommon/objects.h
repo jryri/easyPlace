@@ -65,6 +65,7 @@ public:
     double calcWirelengthLSE_2D(VECTOR_2D);
     VECTOR_2D getWirelengthGradientWA_2D(VECTOR_2D, Pin *);
     VECTOR_2D getWirelengthGradientLSE_2D(VECTOR_2D, Pin *);
+    VECTOR_2D getP2pAttractionGradient_2D(Pin *);
 };
 
 class Pin
@@ -156,6 +157,7 @@ public:
     bool isFixed;
     bool isNI;
     bool isFiller;
+    int totalConnectedPinsNum;
     vector<Pin *> modulePins;
     vector<Net *> nets;
     void Init()
@@ -172,6 +174,7 @@ public:
         isFixed = false;
         isNI = false;
         tier = NULL;
+        totalConnectedPinsNum = -1; // -1 means not calculated yet
     }
     float calcArea()
     {
@@ -189,6 +192,7 @@ public:
     float getArea() { return area; }
     short int getOrientation() { return orientation; }
     void setOrientation(int);
+    int getTotalConnectedPinsNum();
 
 private:
     //! these 2 functions should only be called in db->setModuleCenter/Location!!!

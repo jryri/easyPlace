@@ -99,6 +99,7 @@ public:
     vector<Module *> ePlaceCellsAndFillers; //! contains std cells and fillers, for cGP
 
     vector<VECTOR_3D> wirelengthGradient; // store wirelength gradient for nodes only(wirelength gradient for filler is always 0)
+    vector<VECTOR_3D> p2pattractionGradient; // store p2p attraction gradient for nodes only(wirelength gradient for filler is always 0)
     vector<VECTOR_3D> densityGradient;    // store density gradient for fillers nodes (wirelength gradient for filler node is always 0)
     vector<VECTOR_3D> totalGradient;      // total gradient of objective function f including gradients of all components, for mGP
     vector<VECTOR_3D> fillerGradient;
@@ -109,6 +110,8 @@ public:
     VECTOR_2D invertedGamma;     // gamma of the wa wirelength model,here we actually use 1/gamma, following RePlAce. gamma is different for different dimension
 
     float lambda; // penalty factor
+    float beta; 
+
     double lastHPWL;
 
     int placementStage;
@@ -124,6 +127,7 @@ public:
         globalDensityOverflow = 0;
         invertedGamma.SetZero();
         lambda = 0.0;
+        beta = 8e-7;  //efficient tdp say 2.5e-5 , but we use 1e-6 ~ 1e-7
         lastHPWL = 0.0;
 
         ePlaceStdCellArea = 0;
@@ -152,6 +156,7 @@ public:
     void binNodeDensityUpdate();  //! only consider density from movable modules(nodes) in this function, because terminal density only needed to be calculated once, in binInitializaton()
     void densityOverflowUpdate(); // called in wirelenghGradientUpdate()
     void wirelengthGradientUpdate();
+    void p2pattractionGradientUpdate(); 
     void densityGradientUpdate();
 
     void totalGradientUpdate();

@@ -391,6 +391,35 @@ VECTOR_2D Net::getWirelengthGradientLSE_2D(VECTOR_2D invertedGamma, Pin *curPin)
     return gradientOnCurrentPin;
 }
 
+
+VECTOR_2D Net::getP2pAttractionGradient_2D(Pin *curPin)
+{
+    // Q(i,j) (x_i - x_j)^2 * w_ij
+    // dQ(i,j)/dx_i = 2 * (x_i - x_j) * w_ij
+    // dQ(i,j)/dx_j = -2 * (x_i - x_j) * w_ij
+
+    assert(curPin);
+    VECTOR_2D gradientOnCurrentPin;
+    gradientOnCurrentPin.SetZero();
+
+    POS_3D curPinPos = curPin->getAbsolutePos();
+
+    for (Pin* otherPin : netPins)
+    {
+        if (otherPin == curPin)
+        {
+            continue; // skip the current pin
+        }
+        POS_3D otherPinPos = otherPin->getAbsolutePos();
+        // weight is 1
+        gradientOnCurrentPin.x += 2.0 * (curPinPos.x - otherPinPos.x);
+        gradientOnCurrentPin.y += 2.0 * (curPinPos.y - otherPinPos.y);
+    }
+   
+    return gradientOnCurrentPin;
+}
+
+
 POS_3D Pin::getAbsolutePos()
 {
     // POS_3D absPos;
@@ -434,6 +463,26 @@ void Module::addPin(Pin *_pin)
 {
     modulePins.push_back(_pin);
     nets.push_back(_pin->net);
+}
+
+int Module::getTotalConnectedPinsNum()
+{
+    if (totalConnectedPinsNum != -1)
+    {
+        return totalConnectedPinsNum; // return cached value
+    }
+    
+    // calculate total connected pins num
+    int pins_count = 0;
+    for (Pin *curPin : modulePins)
+    {
+        if (curPin->net)
+        {
+            pins_count += curPin->net->getPinCount() - 1; // -1 because we don't count the current pin itself
+        }
+    }
+    totalConnectedPinsNum = pins_count; // cache the value
+    return totalConnectedPinsNum;
 }
 
 POS_2D Module::getLL_2D()

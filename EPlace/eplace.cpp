@@ -1,5 +1,6 @@
 #include "eplace.h"
 
+
 void EPlacer_2D::setTargetDensity(float target)
 {
     targetDensity = target;
@@ -348,8 +349,12 @@ void EPlacer_2D::binInitialization()
 void EPlacer_2D::gradientVectorInitialization()
 {
     wirelengthGradient.resize(db->dbNodes.size()); // fillers has no wirelength gradient
+    p2pattractionGradient.resize(db->dbNodes.size()); // fillers has no p2p attraction gradient
+    // p2p attraction gradient is only used in mGP, so we don't need to resize it for fillers
+    
     densityGradient.resize(ePlaceNodesAndFillers.size());
     totalGradient.resize(ePlaceNodesAndFillers.size());
+
 
     cGPGradient.resize(ePlaceCellsAndFillers.size());
     fillerGradient.resize(ePlaceFillers.size());
@@ -382,6 +387,17 @@ void EPlacer_2D::wirelengthGradientUpdate()
     segmentFaultCP("wireLengthGradient");
     //! now calculate gamma with the updated tau, here we actually calculate 1/gamma for furthurer calculation
     VECTOR_2D baseWirelengthCoef;
+
+    //     gamma (γ) 是一個平滑因子，用在後續的線長模型中。gamma 越大，線長模型就越平滑，越接近二次模型；gamma
+    //     越小，模型就越接近真實的 HPWL，但梯度變化也越劇烈。
+    //   * 這裡的程式碼實際上計算的是 invertedGamma (即 1/gamma)。
+    //   * 核心思想：gamma 的值是根據 globalDensityOverflow 動態調整的。
+    //       * 如果佈局很擁擠 (`globalDensityOverflow > 1.0`): 程式會減小 baseWirelengthCoef (即增大
+    //         gamma)。這會讓線長梯度變得更平滑、更「溫和」，使得密度梯度（排斥力）能佔據主導地位，從而將元件推開。
+    //       * 如果佈局很鬆散 (`globalDensityOverflow < 0.1`): 程式會增大 baseWirelengthCoef (即減小
+    //         gamma)。這會讓線長模型更接近真實的 HPWL，使得線長梯度變得更「激進」，從而專注於拉近元件以縮短線長。
+    //       * 如果介於兩者之間: 程式會使用一個平滑的指數函數 pow(10.0, ...) 來進行插值，確保過渡是平滑的。
+
     baseWirelengthCoef.x = baseWirelengthCoef.y = 0.125 /*0.5*/; // 0.125=1/8.0, 8.0:see ePlace paper equation 38. Notice that baseWirelngthCoef
                                                                  // is wcof00_org in RePlace code wlen.cpp,
                                                                  // and is tuned according to input benchmark in RePlAce main.cpp
@@ -455,6 +471,27 @@ void EPlacer_2D::wirelengthGradientUpdate()
         }
     }
 }
+void EPlacer_2D::p2pattractionGradientUpdate()
+{
+    segmentFaultCP("p2pAttractionGradient");
+    int index = 0;
+    for (Module *curNode : db->dbNodes) // use ePlaceNodesAndFillers?
+    {
+        assert(curNode->idx == index);
+        p2pattractionGradient[index].SetZero(); //! clear before updating
+        for (Pin *curPin : curNode->modulePins)
+        {   
+            VECTOR_2D gradient;
+            gradient = curPin->net->getP2pAttractionGradient_2D(curPin);        
+            p2pattractionGradient[index].x += gradient.x;
+            p2pattractionGradient[index].y += gradient.y;
+            // get the wirelength gradient of this pin
+        }
+        index++;
+    }
+
+}
+
 
 void EPlacer_2D::densityGradientUpdate()
 {
@@ -573,6 +610,7 @@ void EPlacer_2D::totalGradientUpdate()
     binNodeDensityUpdate();
     densityGradientUpdate();
     wirelengthGradientUpdate();
+    p2pattractionGradientUpdate(); // p2p attraction gradient is only used in mGP, so we don't need to update it for fillers
 
     segmentFaultCP("totalGradient");
     int index = 0;
@@ -582,13 +620,16 @@ void EPlacer_2D::totalGradientUpdate()
     {
         totalGradient[index].SetZero();
         assert(index == curNodeOrFiller->idx);
+        
 
         //! precondition
         float connectedNetNum = curNodeOrFiller->modulePins.size();
         // printf("Connected net num:%d, Pin count:%d\n",connectedNetNum,placer->ePlaceNodesAndFillers[idx]->modulePins.size());
         // assert(connectedNetNum == placer->ePlaceNodesAndFillers[idx]->modulePins.size());
         float charge = curNodeOrFiller->getArea();
-        float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge));
+        float TotalConnectedPinsNum = static_cast<float>(curNodeOrFiller->getTotalConnectedPinsNum());
+        float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge + beta * TotalConnectedPinsNum)); //need to check for +w(i,j)
+        // float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge )); // need to check for +w(i,j)
         // preconditionedGradient[idx].x = preconditioner * placer->totalGradient[idx].x;
         // preconditionedGradient[idx].y = preconditioner * placer->totalGradient[idx].y;
         // calculate -gradient here
@@ -606,8 +647,13 @@ void EPlacer_2D::totalGradientUpdate()
         }
         else
         {
-            totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x);
-            totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y);
+            
+            totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x - beta * p2pattractionGradient[index].x);
+            totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - beta * p2pattractionGradient[index].y);
+            
+            // totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x );
+            // totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y );
+            
             if (!curNodeOrFiller->isMacro)
             {
                 cGPGradient[cGPindex] = totalGradient[index];
@@ -703,6 +749,8 @@ void EPlacer_2D::penaltyFactorInitilization()
     }
 
     lambda = float_div(numerator, denominator);
+    lambda = 1e-5;
+    cout << "Initial penalty factor: " << lambda << endl;
 }
 
 void EPlacer_2D::updatePenaltyFactor()
