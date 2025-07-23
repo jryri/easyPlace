@@ -440,12 +440,12 @@ int BookshelfParser::ReadNetsFile(string file, PlaceDB &db)
 
 	// TODO: if nReadNets > nNets may have memory problem.
 	// check if modules number and terminal number match
-	if (nNets != netIndex)
+	if (nNets < netIndex)
 	{
 		cerr << "Error: There are " << netIndex << " nets in the file\n";
 		exit(-1);
 	}
-	if (pinIndex != nPins)
+	if (pinIndex < nPins)
 	{
 		cerr << "Error: There are " << pinIndex << " pins in the file\n";
 		exit(-1);
