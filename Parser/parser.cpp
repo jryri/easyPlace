@@ -34,6 +34,7 @@ int BookshelfParser::ReadFile(string file, PlaceDB &db)
 	ReadNetsFile(file_nets, db);   // read net file
 	ReadPLFile(file_pl, db, true); // initial module locations
 	db.setChipRegion_2D();
+	db.InitializeNodePinMap(); // initialize NodePinMap after all nodes and pins are added
 	return 0;
 }
 
@@ -361,7 +362,7 @@ int BookshelfParser::ReadNetsFile(string file, PlaceDB &db)
 	cout << "         Nets: " << nNets << endl;
 	cout << "         Pins: " << nPins << endl;
 
-	char tmp1[2000], tmp2[2000], tmp3[2000], tmp4[2000];
+	char tmp1[2000], tmp2[2000], tmp3[2000], tmp4[2000], tmp5[2000], tmp6[2000], tmp7[2000];
 	int maxDegree = 0;
 	int degree;
 	int pinIndex = 0;
@@ -398,7 +399,19 @@ int BookshelfParser::ReadNetsFile(string file, PlaceDB &db)
 			lineNumber++;
 			tmp3[0] = '\0';
 			tmp4[0] = '\0';
-			vCount = sscanf(tmp, "%s %s : %s %s", tmp1, tmp2, tmp3, tmp4);
+			vCount = sscanf(tmp, "%s %s : %s %s", tmp1, tmp2, tmp3, tmp4,
+							tmp5, tmp6, tmp7);
+			vCount = sscanf(tmp, "%s %s : %s %s : %s %s %s",
+							tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+			// u0_g62691 I     :     -54   -54   : 0.0   0.0    p_A
+			// tmp1      tmp2        tmp3  tmp4    tmp5  tmp6  tmp7
+
+            string pinNameStr = "";
+			if (vCount == 7) {
+				pinNameStr = string(tmp7);
+				pinNameStr = pinNameStr.substr(pinNameStr.find("_")+1);
+			}
+            
 
 			if (tmp3[0] != '\0')
 				xOffset = atof(tmp3);
@@ -410,7 +423,7 @@ int BookshelfParser::ReadNetsFile(string file, PlaceDB &db)
 				yOffset = 0;
 
 			module = db.getModuleFromName(tmp1);
-			pinId = db.addPin(module, net, xOffset, yOffset);
+			pinId = db.addPin(module, net, pinNameStr, xOffset, yOffset);
 			module->addPin(db.dbPins[pinId]);
 			net->addPin(db.dbPins[pinId]);
 

@@ -410,10 +410,13 @@ VECTOR_2D Net::getP2pAttractionGradient_2D(Pin *curPin)
         {
             continue; // skip the current pin
         }
+
+        float currentPinPairWeight = 1; // assume weight is 1, can be changed later
         POS_3D otherPinPos = otherPin->getAbsolutePos();
+
         // weight is 1
-        gradientOnCurrentPin.x += 2.0 * (curPinPos.x - otherPinPos.x);
-        gradientOnCurrentPin.y += 2.0 * (curPinPos.y - otherPinPos.y);
+        gradientOnCurrentPin.x += currentPinPairWeight * (curPinPos.x - otherPinPos.x);
+        gradientOnCurrentPin.y += currentPinPairWeight * (curPinPos.y - otherPinPos.y);
     }
    
     return gradientOnCurrentPin;

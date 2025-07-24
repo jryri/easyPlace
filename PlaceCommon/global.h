@@ -1,6 +1,6 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
-
+#include <regex>
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -8,7 +8,10 @@
 #include <assert.h>
 #include <fstream>
 #include <cmath>
+#include <unordered_map>
 #include <algorithm>
+#include <utility> // for std::pair
+#include <functional> // for std::hash
 #include <map>
 #include <list>
 #include <set>
@@ -20,6 +23,9 @@
 #include "arghandler.h"
 #include "omp.h"
 using namespace std;
+
+
+
 const string padding(30, '=');
 #define EPS 1.0E-15 // for float number comparison
 #define DOUBLE_MAX __DBL_MAX__

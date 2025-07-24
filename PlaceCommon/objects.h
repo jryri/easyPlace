@@ -86,6 +86,7 @@ public:
     void init()
     {
         idx = -1;
+        name = "";
         module = NULL;
         net = NULL;
         offset.SetZero();
@@ -97,6 +98,7 @@ public:
         expZeroFlgMin_WA.SetZero();
     }
     int idx;
+    string name;
     Module *module;
     Net *net;
     POS_2D offset;

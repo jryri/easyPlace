@@ -2,6 +2,36 @@
 #define PLACEDB_H
 #include "objects.h"
 // #include "plot.h"
+
+
+// Custom hash for std::pair<std::string, std::string>
+struct PairStringHash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1, T2>& p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+        // Simple combination of hashes. Boost::hash_combine is more robust.
+        return h1 ^ (h2 << 1);
+    }
+};
+struct P2PHash {
+    std::size_t operator()(const std::pair<Pin*, Pin*>& p) const {
+        std::size_t h1 = std::hash<Pin*>{}(p.first);
+        std::size_t h2 = std::hash<Pin*>{}(p.second);
+        return h1 ^ (h2 << 1);  // 可用 boost::hash_combine for better result
+    }
+};
+
+struct P2PEqualUnordered {
+    bool operator()(const std::pair<Pin*, Pin*>& a,
+                    const std::pair<Pin*, Pin*>& b) const {
+        return (a.first == b.first && a.second == b.second) ||
+               (a.first == b.second && a.second == b.first);
+    }
+};
+
+
+
 class PlaceDB
 {
 public:
@@ -41,6 +71,8 @@ public:
     vector<SiteRow> dbSiteRows;
     vector<Tier *> dbTiers;
 
+    unordered_map<pair<string,string>, pair<Module*, Pin *>, PairStringHash> NodePinMap; // map node name to node pointer
+    unordered_map<std::pair<Pin*, Pin*>, float, P2PHash, P2PEqualUnordered> P2PWeightMap;
     map<string, Module *> moduleMap; // map module name to module pointer(module include nodes and terminals)
 
     vector<POS_3D> nodesLocationRegister;
@@ -51,15 +83,35 @@ public:
     Module *addNode(int index, string name, float width, float height); // (frank) 2022-05-13 consider terminal_NI
     Module *addTerminal(int index, string name, float width, float height, bool isFixed, bool isNI);
     void addNet(Net *);
-    int addPin(Module *, Net *, float, float);
+    int addPin(Module *, Net *, string, float, float);
 
     void allocateNodeMemory(int);
     void allocateTerminalMemory(int);
     void allocateNetMemory(int);
     void allocatePinMemory(int);
 
+    float getP2Pweight(Pin *pin1, Pin *pin2)
+    {
+        auto it = P2PWeightMap.find(make_pair(pin1, pin2));
+        if (it != P2PWeightMap.end())
+        {
+            return it->second;
+        }
+        return 1.0f; // or throw an exception
+    }
+    void updateP2Pweight(string node1name, string pin1name, string node2name, string pin2name, float slack , float WNS)
+    {
+        auto [node1, pin1] = NodePinMap[make_pair(node1name, pin1name)];
+        auto [node2, pin2] = NodePinMap[make_pair(node2name, pin2name)];
+        auto curP2P = make_pair(pin1, pin2);
+        float curWeight = getP2Pweight(pin1, pin2); // check if pin1 and pin2 exist
+        P2PWeightMap[curP2P] = curWeight + slack / WNS; // insert or update
+    }
+
+
     Module *getModuleFromName(string);
 
+    void InitializeNodePinMap(); // initialize NodePinMap, should be called after all nodes and pins are added
     void setModuleInitialLocation_2D(Module *, float, float); // set module location in 2D
     void setModuleLocation_2D(Module *, float, float);
     void setModuleLocation_2D(Module *, POS_3D);

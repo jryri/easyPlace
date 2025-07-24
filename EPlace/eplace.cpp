@@ -202,7 +202,7 @@ void EPlacer_2D::binInitialization()
     {
         binDimension.x = binDimension.y = 1024; //!
     }
-    binDimension.x = binDimension.y = 256; //!
+    binDimension.x = binDimension.y = 2048; //!
 
     cout << BLUE << "Bin dimension: " << binDimension << "\ncoreRegion width: " << coreRegionWidth << "\ncoreRegion height: " << coreRegionHeight << RESET << endl;
 

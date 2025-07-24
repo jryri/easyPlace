@@ -31,6 +31,17 @@ void PlaceDB::setCoreRegion()
 void PlaceDB::init_tiers()
 {
 }
+void PlaceDB::InitializeNodePinMap()
+{
+    NodePinMap.clear();
+    for (Module *node : dbNodes)
+    {
+        for (Pin *pin : node->modulePins)
+        {
+            NodePinMap[make_pair(node->name, pin->name)] = make_pair(node, pin);
+        }
+    }
+}
 
 Module *PlaceDB::addNode(int index, string name, float width, float height)
 {
@@ -67,9 +78,11 @@ void PlaceDB::addNet(Net *net)
     dbNets[net->idx] = net;
 }
 
-int PlaceDB::addPin(Module *masterModule, Net *masterNet, float xOffset, float yOffset)
+int PlaceDB::addPin(Module *masterModule, Net *masterNet, string pinName, float xOffset, float yOffset)
 {
-    dbPins.push_back(new Pin(masterModule, masterNet, xOffset, yOffset));
+    Pin* newPin = new Pin(masterModule, masterNet, xOffset, yOffset);
+    newPin->name = pinName;
+    dbPins.push_back(newPin);
     int pinId = (int)dbPins.size() - 1;
     dbPins[pinId]->setId(pinId);
     return pinId;
