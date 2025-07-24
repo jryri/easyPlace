@@ -60,6 +60,7 @@ public:
 
     Module *getModuleFromName(string);
 
+    void setModuleInitialLocation_2D(Module *, float, float); // set module location in 2D
     void setModuleLocation_2D(Module *, float, float);
     void setModuleLocation_2D(Module *, POS_3D);
     void setModuleCenter_2D(Module *, float, float);

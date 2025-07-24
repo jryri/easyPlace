@@ -187,6 +187,8 @@ public:
     float getHeight() { return height; }
     POS_3D getLocation() { return coor; }
     POS_3D getCenter() { return center; }
+    POS_3D getInitialLocation() { return initialcoor; }
+    POS_3D getInitialCenter() { return initialcenter; }
     POS_2D getLL_2D();
     POS_2D getUR_2D();
     float getArea() { return area; }
@@ -198,7 +200,10 @@ private:
     //! these 2 functions should only be called in db->setModuleCenter/Location!!!
     POS_3D coor;   // coor for coordinate
     POS_3D center; // coor of center, be aware that center should be recalculated every time the module is moved, or before HPWL calculation
+    POS_3D initialcoor;   // initial coor, used for displacement gradient calculation , should be set in db->setModuleInitialLocation_2D
+    POS_3D initialcenter; // 
     void setLocation_2D(float, float, float = 0);
+    void setInitialLocation_2D(float, float, float = 0);
     void setCenter_2D(float, float, float = 0);
 };
 

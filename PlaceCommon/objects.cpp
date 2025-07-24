@@ -524,6 +524,19 @@ void Module::setLocation_2D(float _x, float _y, float _z)
     center.z = coor.z;
 }
 
+//! need to check if coor is out side of the chip!!! but should be done in placeDB
+void Module::setInitialLocation_2D(float _x, float _y, float _z)
+{
+    initialcoor.x = _x;
+    initialcoor.y = _y;
+    initialcoor.z = _z;
+    // update center
+    initialcenter.x = initialcoor.x + (float)0.5 * width; //! be careful of float problems
+    initialcenter.y = initialcoor.y + (float)0.5 * height;
+    initialcenter.z = initialcoor.z;
+}
+
+
 void Module::setCenter_2D(float _x, float _y, float _z)
 {
     center.x = _x;

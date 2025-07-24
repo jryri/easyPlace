@@ -100,6 +100,7 @@ public:
 
     vector<VECTOR_3D> wirelengthGradient; // store wirelength gradient for nodes only(wirelength gradient for filler is always 0)
     vector<VECTOR_3D> p2pattractionGradient; // store p2p attraction gradient for nodes only(wirelength gradient for filler is always 0)
+    vector<VECTOR_3D> displacementGradient; // store displacement gradient for nodes only(wirelength gradient for filler is always 0)
     vector<VECTOR_3D> densityGradient;    // store density gradient for fillers nodes (wirelength gradient for filler node is always 0)
     vector<VECTOR_3D> totalGradient;      // total gradient of objective function f including gradients of all components, for mGP
     vector<VECTOR_3D> fillerGradient;
@@ -110,6 +111,7 @@ public:
     VECTOR_2D invertedGamma;     // gamma of the wa wirelength model,here we actually use 1/gamma, following RePlAce. gamma is different for different dimension
 
     float lambda; // penalty factor
+    float displacementFactor; // displacement factor, see ePlace paper equation(35), used to calculate the penalty factor lambda
     float beta; 
 
     double lastHPWL;
@@ -128,6 +130,7 @@ public:
         invertedGamma.SetZero();
         lambda = 0.0;
         beta = 8e-7;  //efficient tdp say 2.5e-5 , but we use 1e-6 ~ 1e-7
+        displacementFactor = 0.05;
         lastHPWL = 0.0;
 
         ePlaceStdCellArea = 0;
@@ -157,6 +160,7 @@ public:
     void densityOverflowUpdate(); // called in wirelenghGradientUpdate()
     void wirelengthGradientUpdate();
     void p2pattractionGradientUpdate(); 
+    void displacementGradientUpdate(); 
     void densityGradientUpdate();
 
     void totalGradientUpdate();

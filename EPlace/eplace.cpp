@@ -22,6 +22,7 @@ void EPlacer_2D::initialization()
     cout << "Bin init time: " << binInitTime << endl;
     gradientVectorInitialization();
     totalGradientUpdate(); // first update
+    cout << "Initial Overflow: " << globalDensityOverflow << endl;
     penaltyFactorInitilization();
 }
 
@@ -201,6 +202,7 @@ void EPlacer_2D::binInitialization()
     {
         binDimension.x = binDimension.y = 1024; //!
     }
+    binDimension.x = binDimension.y = 256; //!
 
     cout << BLUE << "Bin dimension: " << binDimension << "\ncoreRegion width: " << coreRegionWidth << "\ncoreRegion height: " << coreRegionHeight << RESET << endl;
 
@@ -350,6 +352,7 @@ void EPlacer_2D::gradientVectorInitialization()
 {
     wirelengthGradient.resize(db->dbNodes.size()); // fillers has no wirelength gradient
     p2pattractionGradient.resize(db->dbNodes.size()); // fillers has no p2p attraction gradient
+    displacementGradient.resize(db->dbNodes.size()); // fillers has no displacement gradient
     // p2p attraction gradient is only used in mGP, so we don't need to resize it for fillers
     
     densityGradient.resize(ePlaceNodesAndFillers.size());
@@ -491,6 +494,25 @@ void EPlacer_2D::p2pattractionGradientUpdate()
     }
 
 }
+void EPlacer_2D::displacementGradientUpdate()
+{
+    segmentFaultCP("displacementGradient");
+    int index = 0;
+    for (Module *curNode : db->dbNodes) // use ePlaceNodesAndFillers?
+    {
+        assert(curNode->idx == index);
+        displacementGradient[index].SetZero(); //! clear before updating
+        
+        VECTOR_3D curCenter = curNode->getCenter();
+        VECTOR_3D initialCenter = curNode->getInitialCenter(); 
+
+        displacementGradient[index].x = curCenter.x - initialCenter.x;
+        displacementGradient[index].y = curCenter.y - initialCenter.y;
+        
+        index++;
+    }
+
+}
 
 
 void EPlacer_2D::densityGradientUpdate()
@@ -611,6 +633,7 @@ void EPlacer_2D::totalGradientUpdate()
     densityGradientUpdate();
     wirelengthGradientUpdate();
     p2pattractionGradientUpdate(); // p2p attraction gradient is only used in mGP, so we don't need to update it for fillers
+    displacementGradientUpdate(); // displacement gradient is only used in mGP, so we don't need to update it for fillers
 
     segmentFaultCP("totalGradient");
     int index = 0;
@@ -628,8 +651,8 @@ void EPlacer_2D::totalGradientUpdate()
         // assert(connectedNetNum == placer->ePlaceNodesAndFillers[idx]->modulePins.size());
         float charge = curNodeOrFiller->getArea();
         float TotalConnectedPinsNum = static_cast<float>(curNodeOrFiller->getTotalConnectedPinsNum());
-        float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge + beta * TotalConnectedPinsNum)); //need to check for +w(i,j)
-        // float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge )); // need to check for +w(i,j)
+        // float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge + beta * TotalConnectedPinsNum + displacementFactor)); //need to check for +w(i,j)
+        float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge +1)); // need to check for +w(i,j)
         // preconditionedGradient[idx].x = preconditioner * placer->totalGradient[idx].x;
         // preconditionedGradient[idx].y = preconditioner * placer->totalGradient[idx].y;
         // calculate -gradient here
@@ -648,12 +671,15 @@ void EPlacer_2D::totalGradientUpdate()
         else
         {
             
-            totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x - beta * p2pattractionGradient[index].x);
-            totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - beta * p2pattractionGradient[index].y);
+            // totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x - beta * p2pattractionGradient[index].x - displacementFactor * displacementGradient[index].x);
+            // totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - beta * p2pattractionGradient[index].y - displacementFactor * displacementGradient[index].y);
             
             // totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x );
             // totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y );
             
+            totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x -  displacementGradient[index].x);
+            totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - displacementGradient[index].y);
+
             if (!curNodeOrFiller->isMacro)
             {
                 cGPGradient[cGPindex] = totalGradient[index];

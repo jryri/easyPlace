@@ -12,6 +12,7 @@
 #include "Eigen/Dense"
 
 #define MAX_ITERATION 1000
+#define IGNORE_ITERATION 20
 #define BKTRK_EPS 0.95
 
 template <typename T>
@@ -71,7 +72,7 @@ bool EplaceNesterovOpt<T>::stop_condition()
     switch (placer->placementStage)
     {
     case mGP:
-        judge = (placer->globalDensityOverflow < targetOverflow) || (iter_count > MAX_ITERATION);
+        judge = (placer->globalDensityOverflow < targetOverflow &&  iter_count > IGNORE_ITERATION) || (iter_count > MAX_ITERATION);
         if (judge)
         {
             placer->mGPIterationCount = iter_count;

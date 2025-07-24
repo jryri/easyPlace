@@ -555,6 +555,7 @@ int BookshelfParser::ReadPLFile(string file, PlaceDB &db, bool init)
 		}
 
 		db.setModuleLocation_2D(module, x, y);
+		db.setModuleInitialLocation_2D(module, x, y);
 		db.setModuleOrientation(module, orientInt(orientation));
 	}
 

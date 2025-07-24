@@ -105,6 +105,7 @@ Module *PlaceDB::getModuleFromName(string name)
     return ite->second;
 }
 
+
 void PlaceDB::setModuleLocation_2D(Module *module, float x, float y)
 {
     //? use high precision comparison functions in global.h??
@@ -134,6 +135,33 @@ void PlaceDB::setModuleLocation_2D(Module *module, float x, float y)
     {
         curPin->calculateAbsolutePos();
     }
+}
+void PlaceDB::setModuleInitialLocation_2D(Module *module, float x, float y)
+{
+    //? use high precision comparison functions in global.h??
+    //  check if x,y are legal(inside the chip)
+    if (!module->isFixed)
+    {
+        if (x < coreRegion.ll.x)
+        {
+            x = coreRegion.ll.x;
+        }
+        if (x + module->width > coreRegion.ur.x)
+        {
+            x = coreRegion.ur.x - module->width - EPS;
+        }
+        if (y < coreRegion.ll.y)
+        {
+            y = coreRegion.ll.y;
+        }
+        if (y + module->height > coreRegion.ur.y)
+        {
+            y = coreRegion.ur.y - module->height - EPS;
+        }
+    }
+
+    module->setInitialLocation_2D(x, y);
+
 }
 
 void PlaceDB::setModuleLocation_2D(Module *module, POS_3D pos)
