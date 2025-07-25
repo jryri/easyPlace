@@ -4,21 +4,18 @@
 #include "interface.h"
 
 
-bool OpenroadInterface::runSTA(std::string eGPdefPath,
-                                std::string openroadPath,
-                                std::string tclPath,
-                                std::string staReportPath)
+bool OpenroadInterface::runSTA(std::string staDEFPath)
 {
     // 檢查 OpenROAD 執行檔是否存在
-    if (system((openroadPath + " -version > /dev/null 2>&1").c_str()) != 0) {
+    if (system((DEFAULTopenroadPath + " -version > /dev/null 2>&1").c_str()) != 0) {
         std::cerr << "[ERROR] OpenROAD binary not found or not executable.\n";
         return false;
     }
 
     // 生成 eval_sta.tcl
-    std::ofstream tclFile(tclPath);
+    std::ofstream tclFile(DEFAULTtclPath);
     if (!tclFile.is_open()) {
-        std::cerr << "[ERROR] Cannot open TCL path for writing: " << tclPath << "\n";
+        std::cerr << "[ERROR] Cannot open TCL path for writing: " << DEFAULTtclPath << "\n";
         return false;
     }
 
@@ -33,7 +30,7 @@ foreach lef [glob "../ASAP7/LEF/*.lef"] {
     read_lef $lef
 }
 puts "reading def.."
-read_def )" << eGPdefPath << R"(
+read_def )" << staDEFPath << R"(
 
 read_sdc ../aes_cipher_top/aes_cipher_top.sdc
 source ../ASAP7/setRC.tcl
@@ -49,7 +46,7 @@ exit )";
 
     // 組合系統命令
     std::stringstream cmd;
-    cmd << openroadPath << " " << tclPath << " > " << staReportPath;
+    cmd << DEFAULTopenroadPath << " " << DEFAULTtclPath << " > " << DEFAULTstaReportPath;
 
     std::cout << "[INFO] Running OpenROAD STA...\n";
     int ret = system(cmd.str().c_str());
@@ -59,12 +56,15 @@ exit )";
         return false;
     }
 
-    std::cout << "[INFO] STA completed. Report generated: " << staReportPath << "\n";
+    std::cout << "[INFO] STA completed. Report generated: " << DEFAULTstaReportPath << "\n";
     return true;
 }
 
-void OpenroadInterface::analyzeSTAReport(std::string staReportPath)
+void OpenroadInterface::analyzeSTAReport()
 {
+    // If staReportPath is empty, use the default path
+    std::string staReportPath = DEFAULTstaReportPath;
+
     std::ifstream fin(staReportPath);
     if (!fin.is_open()) {
         std::cerr << "Failed to open " << staReportPath << "\n";
@@ -109,11 +109,11 @@ void OpenroadInterface::analyzeSTAReport(std::string staReportPath)
     fin.close();
 }
 
-void OpenroadInterface::outputSTADEF(std::string initialDEFPath, std::string outputDEFPath)
+void OpenroadInterface::outputSTADEF(std::string outputDEFPath)
 {
-    std::ifstream in(initialDEFPath);
+    std::ifstream in(DEFAULTinitialDEFPath);
     if (!in.is_open()) {
-        std::cerr << "Failed to open initial DEF file: " << initialDEFPath << "\n";
+        std::cerr << "Failed to open initial DEF file: " << DEFAULTinitialDEFPath << "\n";
         return;
     }
 

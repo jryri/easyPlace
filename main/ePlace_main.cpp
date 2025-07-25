@@ -95,8 +95,24 @@ int main(int argc, char *argv[])
     double mLGTime;
     double FILLERONLYtime;
     double cGPTime;
+    bool isTinming = false;
+    if (gArg.CheckExist("timing")|| gArg.CheckExist("TDP"))
+    {
+        isTinming = true;
+        cout << "Timing optimization enabled!\n";
+    }
+    else
+    {
+        cout << "Timing optimization disabled!\n";
+    }
 
     EPlacer_2D *eplacer = new EPlacer_2D(placedb);
+    OpenroadInterface* openroadInterface = new OpenroadInterface(placedb);
+    string initialDEFPath = "./aes_cipher_top.def";
+    string openroadPath = "./openroad";
+    string tclPath = "./eplace_sta.tcl";
+    string staReportPath = "./eplace_sta_report.rpt";
+    openroadInterface->intializePaths(initialDEFPath, openroadPath, tclPath, staReportPath);
 
     float targetDensity;
     if (!gArg.GetFloat("targetDensity", &targetDensity))
@@ -107,7 +123,7 @@ int main(int argc, char *argv[])
     eplacer->setTargetDensity(targetDensity);
     eplacer->initialization();
 
-    FirstOrderOptimizer<VECTOR_3D> *opt = new EplaceNesterovOpt<VECTOR_3D>(eplacer);
+    FirstOrderOptimizer<VECTOR_3D> *opt = new EplaceNesterovOpt<VECTOR_3D>(eplacer, isTinming, openroadInterface);
 
     if (!gArg.CheckExist("nomGP"))
     {

@@ -7,6 +7,7 @@
 
 #include "global.h"
 #include "eplace.h"
+#include "interface.h"
 #include "plot.h"
 #include "optutils.hpp"
 #include "Eigen/Dense"
@@ -19,6 +20,7 @@ template <typename T>
 class NSIter
 {
 public:
+
     void resize(size_t length);
     std::vector<T> main_solution;
     std::vector<T> reference_solution;
@@ -37,7 +39,8 @@ template <typename T>
 class EplaceNesterovOpt : public FirstOrderOptimizer<T>
 {
 public:
-    EplaceNesterovOpt(EPlacer_2D *placer) : placer(placer) {};
+    EplaceNesterovOpt(EPlacer_2D *placer, bool isTimnig, OpenroadInterface* openroadInterface) : placer(placer), openroadInterface(openroadInterface){};
+
     // void opt();
 private:
     bool stop_condition();
@@ -51,6 +54,8 @@ private:
     NSIter<T> cur_iter, last_iter;
     size_t iter_count;
     float NS_opt_param; // ak
+    bool isTimnig = false;
+    OpenroadInterface* openroadInterface;
 };
 
 template <typename T>
@@ -178,6 +183,12 @@ void EplaceNesterovOpt<T>::init()
     NS_opt_param = 1;
     cur_iter.main_solution = placer->getPosition();
     printf("main length %d\n", cur_iter.main_solution.size());
+    if (isTimnig){
+        string staDEFPath = "./sta_iter" + to_string(iter_count) + ".def";
+        openroadInterface->outputSTADEF(staDEFPath);
+        openroadInterface->runSTA(staDEFPath);
+        openroadInterface->analyzeSTAReport();
+    }
 }
 
 template <typename T>
