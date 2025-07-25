@@ -20,26 +20,26 @@ bool OpenroadInterface::runSTA(std::string staDEFPath)
     }
 
     tclFile << R"(
-foreach libFile [glob "../ASAP7/LIB/*nldm*.lib"] {
+foreach libFile [glob "./ASAP7/LIB/*nldm*.lib"] {
     puts "lib: $libFile"
     read_liberty $libFile
 }
 puts "reading lef.."
-read_lef ../ASAP7/techlef/asap7_tech_1x_201209.lef
-foreach lef [glob "../ASAP7/LEF/*.lef"] {
+read_lef ./ASAP7/techlef/asap7_tech_1x_201209.lef
+foreach lef [glob "./ASAP7/LEF/*.lef"] {
     read_lef $lef
 }
 puts "reading def.."
 read_def )" << staDEFPath << R"(
 
-read_sdc ../aes_cipher_top/aes_cipher_top.sdc
-source ../ASAP7/setRC.tcl
+read_sdc ./testcase/aes_cipher_top/aes_cipher_top.sdc
+source ./ASAP7/setRC.tcl
 
 estimate_parasitics -placement
 
 report_tns
 report_wns
-report_checks -slack_max 0 -endpoint_path_count 10000 -unique_paths_to_endpoint   
+report_checks -slack_max 0 -endpoint_count 10000 -unique 
 exit )";
 
     tclFile.close();
@@ -101,6 +101,17 @@ void OpenroadInterface::analyzeSTAReport()
             for (size_t i = 1; i < pathPins.size(); ++i) {
                 auto [node1, pin1] = pathPins[i - 1];
                 auto [node2, pin2] = pathPins[i];
+                auto module1 = db->getModuleFromName(node1);
+                auto module2 = db->getModuleFromName(node2);
+                if (module1 == nullptr ) {
+                    cout << "Module not found in database: " << node1 << endl;
+                    exit(1);
+                }
+                if (module2 == nullptr) {
+                    cout << "Module not found in database: " << node2 << endl;
+                    exit(1);
+                }
+                // cout << "node1: " << node1 << " pin1: " << pin1 << " node2: " << node2 << " pin2: " << pin2 << " slack: " << slack << " WNS: " << WNS << endl;
                 db->updateP2Pweight(node1, pin1, node2, pin2, slack, WNS);
             }
         }
@@ -128,18 +139,14 @@ void OpenroadInterface::outputSTADEF(std::string outputDEFPath)
     stringstream ss;
 
     while (std::getline(in, line)) {
+        // cout << line << endl;
         // Skip the first 4 lines
-        if(line.find("COMPONENTS")!=string::npos){
-            inComponent = true;
-            out << line << endl;
-            continue;
-        }
-        if (line.find("END COMPONENTS") != string::npos) {
+        if (line.find("END COMPONENTS") != string::npos && inComponent == true) {
             inComponent = false;
             out << line << endl;
             continue;
         }
-        if (inComponent) {
+        else if (inComponent) {
             //- g223780 OAI21xp33_ASAP7_75t_SL + PLACED ( 36324 15858 ) N
             //;
             if (line.find("PLACED") != string::npos) {
@@ -147,17 +154,45 @@ void OpenroadInterface::outputSTADEF(std::string outputDEFPath)
                 ss.clear();
                 ss.str(line);
                 std::string tmp, nodeName , nodetype;
-                if (tmp == "-")ss >>tmp >> nodeName >> nodetype; // Get the node name
-                else ss >> nodeName >> nodetype;
-                
-                
-                auto module = db->getModuleFromName(nodeName);
-                assert(module != nullptr && "Module not found in database");
+                if (line.find("-") != string::npos)ss >>tmp >> nodeName >> nodetype; // Get the node name
+                else continue;
 
-                out << nodeName << " " << nodetype << " + PLACED ( "
+               // Remove all '\' from nodeName
+            for (int i = nodeName.size() - 1; i >= 0; --i) {
+                if (nodeName[i] == '\\') {
+                    nodeName.erase(i, 1);
+                }
+            }
+
+            // Lookup
+            auto module = db->getModuleFromName(nodeName);
+
+            // Re-insert '\' before '[' or ']'
+            for (int i = nodeName.size() - 1; i >= 0; --i) {
+                if (nodeName[i] == '[' || nodeName[i] == ']') {
+                    nodeName.insert(i, 1, '\\');
+                }
+            }
+
+                // cout << "nodeName: " << nodeName << endl;
+                // cout << "nodetype: " << nodetype << endl;
+                // cout << "module: " << module << endl;
+
+                if (module == nullptr) {
+                    cout << "Module not found in database: " << nodeName << endl;
+                    exit(1);
+                }
+
+                out <<"- "<< nodeName << " " << nodetype << " + PLACED ( "
                         << module->getLocation().x << " " << module->getLocation().y << " ) N ;\n";
                
-            } 
+            }
+            continue;
+        }
+        else if(line.find("COMPONENTS")!=string::npos && inComponent == false){
+            inComponent = true;
+            out << line << endl;
+            continue;
         }
         out << line << endl; // Write other lines as they are
         

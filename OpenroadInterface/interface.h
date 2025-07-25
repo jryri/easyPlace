@@ -15,7 +15,7 @@ public:
     void intializePaths(std::string initialDEFPath, std::string openroadPath, std::string tclPath, std::string staReportPath)
     {
                 // 檢查 OpenROAD 執行檔是否存在
-        if (system((DEFAULTopenroadPath + " -version > /dev/null 2>&1").c_str()) != 0) {
+        if (system((openroadPath + " -version > /dev/null 2>&1").c_str()) != 0) {
             std::cerr << "[ERROR] OpenROAD binary not found or not executable.\n";
             return false;
         }

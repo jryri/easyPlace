@@ -65,7 +65,7 @@ public:
     double calcWirelengthLSE_2D(VECTOR_2D);
     VECTOR_2D getWirelengthGradientWA_2D(VECTOR_2D, Pin *);
     VECTOR_2D getWirelengthGradientLSE_2D(VECTOR_2D, Pin *);
-    VECTOR_2D getP2pAttractionGradient_2D(Pin *);
+    VECTOR_2D getP2pAttractionGradient_2D(Pin *, PlaceDB* );
 };
 
 class Pin

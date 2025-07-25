@@ -39,7 +39,7 @@ template <typename T>
 class EplaceNesterovOpt : public FirstOrderOptimizer<T>
 {
 public:
-    EplaceNesterovOpt(EPlacer_2D *placer, bool isTimnig, OpenroadInterface* openroadInterface) : placer(placer), openroadInterface(openroadInterface){};
+    EplaceNesterovOpt(EPlacer_2D *placer, bool isTiming, OpenroadInterface* openroadInterface) : placer(placer),isTiming(isTiming), openroadInterface(openroadInterface){};
 
     // void opt();
 private:
@@ -54,7 +54,7 @@ private:
     NSIter<T> cur_iter, last_iter;
     size_t iter_count;
     float NS_opt_param; // ak
-    bool isTimnig = false;
+    bool isTiming = false;
     OpenroadInterface* openroadInterface;
 };
 
@@ -183,11 +183,16 @@ void EplaceNesterovOpt<T>::init()
     NS_opt_param = 1;
     cur_iter.main_solution = placer->getPosition();
     printf("main length %d\n", cur_iter.main_solution.size());
-    if (isTimnig){
+    
+    if (isTiming){
+        cout << "isTiming" << endl;
         string staDEFPath = "./sta_iter" + to_string(iter_count) + ".def";
         openroadInterface->outputSTADEF(staDEFPath);
         openroadInterface->runSTA(staDEFPath);
         openroadInterface->analyzeSTAReport();
+    }
+    else {
+        cout << "not isTiming" << endl;
     }
 }
 

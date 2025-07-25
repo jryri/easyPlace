@@ -129,7 +129,7 @@ public:
         globalDensityOverflow = 0;
         invertedGamma.SetZero();
         lambda = 0.0;
-        beta = 8e-7;  //efficient tdp say 2.5e-5 , but we use 1e-6 ~ 1e-7
+        beta = 2.5e-5;  //efficient tdp say 2.5e-5 , but we use 1e-6 ~ 1e-7
         displacementFactor = 0.05;
         lastHPWL = 0.0;
 

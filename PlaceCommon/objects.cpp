@@ -1,4 +1,5 @@
 #include <objects.h>
+#include "placedb.h"
 
 void Net::addPin(Pin *pin)
 {
@@ -392,7 +393,7 @@ VECTOR_2D Net::getWirelengthGradientLSE_2D(VECTOR_2D invertedGamma, Pin *curPin)
 }
 
 
-VECTOR_2D Net::getP2pAttractionGradient_2D(Pin *curPin)
+VECTOR_2D Net::getP2pAttractionGradient_2D(Pin *curPin, PlaceDB* db)
 {
     // Q(i,j) (x_i - x_j)^2 * w_ij
     // dQ(i,j)/dx_i = 2 * (x_i - x_j) * w_ij
@@ -410,8 +411,9 @@ VECTOR_2D Net::getP2pAttractionGradient_2D(Pin *curPin)
         {
             continue; // skip the current pin
         }
-
-        float currentPinPairWeight = 1; // assume weight is 1, can be changed later
+        
+        float currentPinPairWeight = db -> getP2Pweight(curPin, otherPin); // check if pin1 and pin2 exist
+        // assume weight is 1, can be changed later
         POS_3D otherPinPos = otherPin->getAbsolutePos();
 
         // weight is 1

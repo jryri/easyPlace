@@ -485,7 +485,7 @@ void EPlacer_2D::p2pattractionGradientUpdate()
         for (Pin *curPin : curNode->modulePins)
         {   
             VECTOR_2D gradient;
-            gradient = curPin->net->getP2pAttractionGradient_2D(curPin);        
+            gradient = curPin->net->getP2pAttractionGradient_2D(curPin ,db);        
             p2pattractionGradient[index].x += gradient.x;
             p2pattractionGradient[index].y += gradient.y;
             // get the wirelength gradient of this pin
@@ -651,8 +651,8 @@ void EPlacer_2D::totalGradientUpdate()
         // assert(connectedNetNum == placer->ePlaceNodesAndFillers[idx]->modulePins.size());
         float charge = curNodeOrFiller->getArea();
         float TotalConnectedPinsNum = static_cast<float>(curNodeOrFiller->getTotalConnectedPinsNum());
-        // float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge + beta * TotalConnectedPinsNum + displacementFactor)); //need to check for +w(i,j)
-        float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge +1)); // need to check for +w(i,j)
+        float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge + beta * TotalConnectedPinsNum + displacementFactor)); //need to check for +w(i,j)
+        // float preconditioner = 1 / max(1.0f, (connectedNetNum + lambda * charge +1)); // need to check for +w(i,j)
         // preconditionedGradient[idx].x = preconditioner * placer->totalGradient[idx].x;
         // preconditionedGradient[idx].y = preconditioner * placer->totalGradient[idx].y;
         // calculate -gradient here
@@ -671,14 +671,14 @@ void EPlacer_2D::totalGradientUpdate()
         else
         {
             
-            // totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x - beta * p2pattractionGradient[index].x - displacementFactor * displacementGradient[index].x);
-            // totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - beta * p2pattractionGradient[index].y - displacementFactor * displacementGradient[index].y);
+            totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x - beta * p2pattractionGradient[index].x - displacementFactor * displacementGradient[index].x);
+            totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - beta * p2pattractionGradient[index].y - displacementFactor * displacementGradient[index].y);
             
             // totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x );
             // totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y );
             
-            totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x -  displacementGradient[index].x);
-            totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - displacementGradient[index].y);
+            // totalGradient[index].x = preconditioner * (lambda * densityGradient[index].x - wirelengthGradient[index].x -  displacementGradient[index].x);
+            // totalGradient[index].y = preconditioner * (lambda * densityGradient[index].y - wirelengthGradient[index].y - displacementGradient[index].y);
 
             if (!curNodeOrFiller->isMacro)
             {
