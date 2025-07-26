@@ -90,6 +90,9 @@ public:
     void allocateNetMemory(int);
     void allocatePinMemory(int);
 
+    void resetP2Pweights() {
+        P2PWeightMap.clear();
+    }
     float getP2Pweight(Pin *pin1, Pin *pin2)
     {
         auto it = P2PWeightMap.find(make_pair(pin1, pin2));

@@ -9,7 +9,7 @@ foreach lef [glob "./ASAP7/LEF/*.lef"] {
     read_lef $lef
 }
 puts "reading def.."
-read_def ./sta_iter0.def
+read_def ./sta_iter100.def
 
 read_sdc ./testcase/aes_cipher_top/aes_cipher_top.sdc
 source ./ASAP7/setRC.tcl

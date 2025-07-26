@@ -71,6 +71,9 @@ void OpenroadInterface::analyzeSTAReport()
         return;
     }
 
+    //reset p2p weights
+    db->resetP2Pweights();
+
     std::string line;
     std::regex startpoint_regex("^Startpoint: (\\S+)");
     std::regex endpoint_regex("^Endpoint: (\\S+)");
@@ -80,9 +83,25 @@ void OpenroadInterface::analyzeSTAReport()
     std::string start_node, end_node;
     float slack = 0.0f;
     float WNS = DEFAULTWNS;//
+    float TNS =0.0f;
     std::vector<std::pair<std::string, std::string>> pathPins;
 
+    int NegativeSlackCount = 0;
+
+
     while (std::getline(fin, line)) {
+        if (line.find("wns")!= std::string::npos) {
+            std::istringstream iss(line);
+            std::string wns_str;
+            iss >> wns_str >> WNS; // Extract WNS value
+            continue;
+        }
+        if (line.find("tns")!= std::string::npos) {
+            std::istringstream iss(line);
+            std::string tns_str;
+            iss >> tns_str >> TNS; // Extract TNS value
+            continue;
+        }
         std::smatch match;
         if (std::regex_search(line, match, startpoint_regex)) {
             pathPins.clear();  // reset
@@ -98,7 +117,8 @@ void OpenroadInterface::analyzeSTAReport()
         }
         else if (std::regex_search(line, match, slack_regex)) {
             slack = std::stof(match[1].str());
-            for (size_t i = 1; i < pathPins.size(); ++i) {
+            if (slack < 0) {
+                for (size_t i = 1; i < pathPins.size(); ++i) {
                 auto [node1, pin1] = pathPins[i - 1];
                 auto [node2, pin2] = pathPins[i];
                 auto module1 = db->getModuleFromName(node1);
@@ -112,11 +132,19 @@ void OpenroadInterface::analyzeSTAReport()
                     exit(1);
                 }
                 // cout << "node1: " << node1 << " pin1: " << pin1 << " node2: " << node2 << " pin2: " << pin2 << " slack: " << slack << " WNS: " << WNS << endl;
+                
                 db->updateP2Pweight(node1, pin1, node2, pin2, slack, WNS);
+                NegativeSlackCount++;
+
+                }
             }
         }
     }
-
+    std::cout << "Total negative slack count: " << NegativeSlackCount << std::endl;
+    std::cout << "WNS: " << WNS << std::endl;
+    std::cout << "TNS: " << TNS << std::endl;
+    std::cout << "P2P weights updated based on STA report." << std::endl;
+    // Close the file
     fin.close();
 }
 
@@ -137,6 +165,7 @@ void OpenroadInterface::outputSTADEF(std::string outputDEFPath)
     bool inComponent = false;
     int componentCount = 0;
     stringstream ss;
+
 
     while (std::getline(in, line)) {
         // cout << line << endl;

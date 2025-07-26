@@ -12,8 +12,8 @@
 #include "optutils.hpp"
 #include "Eigen/Dense"
 
-#define MAX_ITERATION 1000
-#define IGNORE_ITERATION 20
+#define MAX_ITERATION 100
+#define IGNORE_ITERATION 40
 #define BKTRK_EPS 0.95
 
 template <typename T>
@@ -77,7 +77,8 @@ bool EplaceNesterovOpt<T>::stop_condition()
     switch (placer->placementStage)
     {
     case mGP:
-        judge = (placer->globalDensityOverflow < targetOverflow &&  iter_count > IGNORE_ITERATION) || (iter_count > MAX_ITERATION);
+        judge = (placer->globalDensityOverflow < targetOverflow ) || (iter_count > MAX_ITERATION);
+        // judge = (iter_count > IGNORE_ITERATION);
         if (judge)
         {
             placer->mGPIterationCount = iter_count;
@@ -167,6 +168,16 @@ void EplaceNesterovOpt<T>::opt_step()
         cerr << "INCORRECT PLACEMENT STAGE!\n";
         exit(0);
     }
+
+    if (isTiming && iter_count % 5 == 0){
+        // output def and run sta
+        cout << "isTiming" << endl;
+        string staDEFPath = "./sta_iter" + to_string(iter_count) + ".def";
+        openroadInterface->outputSTADEF(staDEFPath);
+        openroadInterface->runSTA(staDEFPath);
+        openroadInterface->analyzeSTAReport();
+    }
+
 
     iter_count++;
 }

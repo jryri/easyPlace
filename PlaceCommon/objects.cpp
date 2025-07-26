@@ -413,6 +413,7 @@ VECTOR_2D Net::getP2pAttractionGradient_2D(Pin *curPin, PlaceDB* db)
         }
         
         float currentPinPairWeight = db -> getP2Pweight(curPin, otherPin); // check if pin1 and pin2 exist
+        // if (currentPinPairWeight != 1 ) cout <<"( "<< curPin->name <<", " << otherPin->name<<" ): " << currentPinPairWeight<<endl; 
         // assume weight is 1, can be changed later
         POS_3D otherPinPos = otherPin->getAbsolutePos();
 
