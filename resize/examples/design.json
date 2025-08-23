@@ -1,0 +1,27 @@
+{
+  "cells": [
+    {
+      "id": "U1",
+      "current_type": "INV_X2",
+      "up_type": "INV_X4",
+      "down_type": "INV_X1",
+      "power": {"P_cur": 1.0, "P_up": 1.6, "P_down": 0.7},
+      "delay": {"d_cur": 0.08, "d_up": 0.06, "d_down": 0.11}
+    },
+    {
+      "id": "U2",
+      "current_type": "NAND2_X2",
+      "up_type": "NAND2_X4",
+      "down_type": "NAND2_X1",
+      "power": {"P_cur": 1.4, "P_up": 2.1, "P_down": 1.0},
+      "delay": {"d_cur": 0.10, "d_up": 0.08, "d_down": 0.13}
+    }
+  ],
+  "timing_nodes": ["U1/Y", "U2/Y"],
+  "crit_edges": [
+    {"u": "U1/Y", "v": "U2/Y", "driver_cell": "U1", "d_wire": 0.02}
+  ],
+  "endpoints": ["U2/Y"],
+  "setup": {"U2/Y": 0.02},
+  "clocks": [{"name": "clk", "period": 0.30}]
+}
