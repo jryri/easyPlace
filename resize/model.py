@@ -100,6 +100,31 @@ def build_and_solve(design: Dict[str, Any], out_path: Path, time_limit: int, max
 					 + (d_up - d_cur) * u[cid]
 					 + (d_down - d_cur) * d[cid])
 
+	# ---- VT assignment (one-hot) ----
+	vt_vars: Dict[str, Dict[str, gp.Var]] = {}
+	for c in cells:
+		cid = c["id"]
+		vt_opts = c.get("vt_options", [])
+		# If no vt options provided, inject a neutral option
+		if not vt_opts:
+			vt_opts = [{"name": "SVT", "d_add": 0.0, "P_add": 0.0}]
+		c["_vt_opts"] = vt_opts  # store back for later expressions
+		vt_vars[cid] = {}
+		for opt in vt_opts:
+			vname = str(opt["name"]) 
+			vt_vars[cid][vname] = m.addVar(vtype=GRB.BINARY, name=f"vt_{cid}_{vname}")
+		m.addConstr(gp.quicksum(vt_vars[cid][str(opt["name")] ] for opt in vt_opts) == 1, name=f"vt_onehot_{cid}")
+
+	# Add VT deltas to delay and power
+	for c in cells:
+		cid = c["id"]
+		vt_opts = c["_vt_opts"]
+		vt_d_add = gp.quicksum(float(opt.get("d_add", 0.0)) * vt_vars[cid][str(opt["name"])] for opt in vt_opts)
+		vt_P_add = gp.quicksum(float(opt.get("P_add", 0.0)) * vt_vars[cid][str(opt["name"])] for opt in vt_opts)
+		# update expressions
+		d_gate[cid] = d_gate[cid] + vt_d_add
+		P_cell[cid] = P_cell[cid] + vt_P_add
+
 	# Edge timing constraints only on critical edges
 	for e in crit_edges:
 		u_node = e["u"]

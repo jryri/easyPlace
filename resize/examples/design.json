@@ -6,7 +6,12 @@
       "up_type": "INV_X4",
       "down_type": "INV_X1",
       "power": {"P_cur": 1.0, "P_up": 1.6, "P_down": 0.7},
-      "delay": {"d_cur": 0.08, "d_up": 0.06, "d_down": 0.11}
+      "delay": {"d_cur": 0.08, "d_up": 0.06, "d_down": 0.11},
+      "vt_options": [
+        {"name": "LVT", "d_add": -0.010, "P_add": 0.20},
+        {"name": "SVT", "d_add":  0.000, "P_add": 0.00},
+        {"name": "HVT", "d_add":  0.008,  "P_add": -0.10}
+      ]
     },
     {
       "id": "U2",
@@ -14,7 +19,12 @@
       "up_type": "NAND2_X4",
       "down_type": "NAND2_X1",
       "power": {"P_cur": 1.4, "P_up": 2.1, "P_down": 1.0},
-      "delay": {"d_cur": 0.10, "d_up": 0.08, "d_down": 0.13}
+      "delay": {"d_cur": 0.10, "d_up": 0.08, "d_down": 0.13},
+      "vt_options": [
+        {"name": "LVT", "d_add": -0.012, "P_add": 0.30},
+        {"name": "SVT", "d_add":  0.000, "P_add": 0.00},
+        {"name": "HVT", "d_add":  0.010,  "P_add": -0.12}
+      ]
     }
   ],
   "timing_nodes": ["U1/Y", "U2/Y"],

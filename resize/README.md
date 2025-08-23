@@ -10,6 +10,7 @@ This folder contains a standalone timing-driven resizer that integrates with you
 ## Inputs
 - `examples/design.json`: structure of the placement/timing graph subset to optimize.
   - cells: id, current_type, up_type, down_type, anchors (optional), region (optional)
+  - vt_options (per cell): list of { name, d_add, P_add } specifying VT choices. d_add/P_add are linear deltas added to the size-based delay/power of that cell.
   - timing_nodes: list of node ids
   - crit_edges: list of {u, v, d_wire}
   - endpoints: list of node ids with setup requirements
@@ -42,6 +43,7 @@ python model.py --design examples/design.json --out resize_decisions.json --time
 
 ## Notes
 - The model enforces ±1 step only for each cell per iteration.
+- VT assignment is modeled as a one-hot choice per cell with additive delay/power deltas. Provide realistic `d_add`/`P_add` values (can be endpoint/RC dependent approximations refreshed each STA iteration).
 - Timing constraints are applied to a subset (critical cone) to control problem size.
 - Gate delay and power are linearized by per-cell deltas at current operating point; refresh them each STA iteration.
 - Multi-objective is lexicographic: timing (sum of endpoint slack deficits) has higher priority than power.
